@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mey.84</title>
+    <!-- Tailwind CSS dari CDN untuk gaya ringkas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Gaya tambahan untuk font dan warna */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Warna latar belakang gelap */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <!-- Kotak utama aplikasi -->
+    <div class="w-full max-w-2xl bg-[#161b22] rounded-2xl shadow-xl p-8 space-y-8 text-white">
+        <h1 class="text-5xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 font-inter">
+            mey.84
+        </h1>
+        <p class="text-center text-lg text-gray-400">
+            Pendekkan URL anda dengan mudah dan cepat.
+        </p>
+
+        <!-- Mesej ralat dan kejayaan -->
+        <div id="message-box" class="hidden"></div>
+
+        <!-- Borang untuk memendekkan URL -->
+        <form id="shorten-form" class="space-y-4">
+            <div class="flex flex-col space-y-2">
+                <label for="longUrl" class="text-sm font-medium text-gray-300">
+                    URL Asal
+                </label>
+                <input
+                    type="url"
+                    id="longUrl"
+                    class="w-full p-3 rounded-lg bg-[#0d1117] text-white placeholder-gray-400 border border-transparent focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    placeholder="https://example.com/url-yang-panjang"
+                    required
+                />
+            </div>
+
+            <div class="flex flex-col space-y-2">
+                <label for="customPath" class="text-sm font-medium text-gray-300">
+                    Nama yang Anda Inginkan
+                </label>
+                <div class="flex rounded-lg bg-[#0d1117] text-white focus-within:ring-2 focus-within:ring-blue-500">
+                    <span class="p-3 text-gray-400 select-none">
+                        mey.84/
+                    </span>
+                    <input
+                        type="text"
+                        id="customPath"
+                        class="flex-1 p-3 bg-transparent text-white placeholder-gray-400 focus:outline-none"
+                        placeholder="nama-anda-di-sini"
+                        required
+                    />
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                id="shorten-button"
+                class="w-full p-4 rounded-lg font-bold text-white transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg"
+            >
+                Pendekkan URL
+            </button>
+        </form>
+    </div>
+
+    <!-- Skrip Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Konfigurasi Firebase anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyAaSLU9xxI49vZqvh_6VAgL_eW1oNUElNI",
+            authDomain: "url-shortener-mey84.firebaseapp.com",
+            projectId: "url-shortener-mey84",
+            storageBucket: "url-shortener-mey84.firebasestorage.app",
+            messagingSenderId: "937778332689",
+            appId: "1:937778332689:web:561ffc97a347dba6a61db0"
+        };
+
+        // Inisialisasi Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Pemboleh ubah global untuk aplikasi
+        const appId = "1:937778332689:web:561ffc97a347dba6a61db0";
+        const form = document.getElementById('shorten-form');
+        const longUrlInput = document.getElementById('longUrl');
+        const customPathInput = document.getElementById('customPath');
+        const messageBox = document.getElementById('message-box');
+        const shortenButton = document.getElementById('shorten-button');
+
+        // Fungsi untuk memaparkan mesej
+        function showMessage(text, isError = false) {
+            messageBox.textContent = text;
+            messageBox.className = `p-4 rounded-xl font-semibold transition-all duration-200 ${isError ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`;
+            messageBox.style.display = 'block';
+        }
+
+        // Fungsi untuk mengendalikan penghalaan (redirect)
+        async function handleRedirect() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const path = urlParams.get('p');
+
+            if (path) {
+                const docRef = db.collection(`/artifacts/${appId}/public/data/short_urls`).doc(path);
+                try {
+                    const docSnap = await docRef.get();
+                    if (docSnap.exists) {
+                        const data = docSnap.data();
+                        window.location.replace(data.longUrl);
+                    } else {
+                        showMessage('URL pendek tidak sah atau tidak wujud.', true);
+                    }
+                } catch (e) {
+                    console.error("Ralat semasa mendapatkan dokumen: ", e);
+                    showMessage('Ralat semasa mengambil URL. Sila cuba lagi.', true);
+                }
+            }
+        }
+        
+        // Panggil fungsi redirect semasa aplikasi dimuatkan
+        document.addEventListener('DOMContentLoaded', handleRedirect);
+
+        // Pengendali borang
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showMessage('', false); // Kosongkan mesej
+            shortenButton.textContent = 'Memproses...';
+            shortenButton.disabled = true;
+
+            const longUrl = longUrlInput.value;
+            const customPath = customPathInput.value;
+
+            if (!longUrl || !customPath) {
+                showMessage('Sila masukkan URL asal dan nama yang anda inginkan.', true);
+                shortenButton.textContent = 'Pendekkan URL';
+                shortenButton.disabled = false;
+                return;
+            }
+
+            try {
+                const docRef = db.collection(`/artifacts/${appId}/public/data/short_urls`).doc(customPath);
+                const docSnap = await docRef.get();
+
+                if (docSnap.exists) {
+                    showMessage(`Nama '${customPath}' sudah digunakan. Sila pilih nama lain.`, true);
+                } else {
+                    await docRef.set({
+                        longUrl: longUrl,
+                        customPath: customPath,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    const shortUrl = `${window.location.origin}${window.location.pathname}?p=${customPath}`;
+                    const displayUrl = `mey.84/${customPath}`;
+                    
+                    showMessage(`URL pendek anda: <a href="${shortUrl}" target="_blank" class="font-bold underline">${displayUrl}</a>`, false);
+
+                    longUrlInput.value = '';
+                    customPathInput.value = '';
+                }
+            } catch (e) {
+                console.error("Ralat semasa memendekkan URL:", e);
+                showMessage('Ralat semasa memendekkan URL. Sila cuba lagi.', true);
+            } finally {
+                shortenButton.textContent = 'Pendekkan URL';
+                shortenButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
