@@ -99,7 +99,7 @@
 
         // Fungsi untuk memaparkan mesej
         function showMessage(text, isError = false) {
-            messageBox.textContent = text;
+            messageBox.innerHTML = text; // Tukar kepada innerHTML
             messageBox.className = `p-4 rounded-xl font-semibold transition-all duration-200 ${isError ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`;
             messageBox.style.display = 'block';
         }
@@ -132,7 +132,8 @@
         // Pengendali borang
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            showMessage('', false); // Kosongkan mesej
+            messageBox.innerHTML = ''; // Kosongkan mesej
+            messageBox.style.display = 'none';
             shortenButton.textContent = 'Memproses...';
             shortenButton.disabled = true;
 
