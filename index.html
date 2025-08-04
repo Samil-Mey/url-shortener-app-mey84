@@ -163,7 +163,7 @@
                     const shortUrl = `${window.location.origin}${window.location.pathname}?p=${customPath}`;
                     const displayUrl = `mey.84/${customPath}`;
                     
-                    showMessage(`URL pendek anda: <a href="${shortUrl}" target="_blank" class="font-bold underline">${displayUrl}</a>`, false);
+                    showMessage(`URL pendek anda: <a href="${shortUrl}" target="_blank" class="font-bold underline">${shortUrl}</a>`, false);
 
                     longUrlInput.value = '';
                     customPathInput.value = '';
